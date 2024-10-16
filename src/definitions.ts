@@ -1,3 +1,3 @@
 export interface VideoPlugin {
-  echo(options: { value: string }): Promise<{ value: string }>;
+  playVideo(options: { video: string}) : Promise<void>;
 }
