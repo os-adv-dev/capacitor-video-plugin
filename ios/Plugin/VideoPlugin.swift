@@ -2,9 +2,10 @@ import Foundation
 import Capacitor
 import AVKit
 import UIKit
+import CoreBluetooth
 
 @objc(VideoPlugin)
-public class VideoPlugin: CAPPlugin, CAPBridgedPlugin {
+public class VideoPlugin: CAPPlugin, CAPBridgedPlugin, CBCentralManagerDelegate {
     
     private let NO_URL_PROVIDED = "No video url provided"
     public let identifier = "VideoPlugin"
@@ -13,8 +14,37 @@ public class VideoPlugin: CAPPlugin, CAPBridgedPlugin {
         CAPPluginMethod(name: "playVideo", returnType: CAPPluginReturnPromise)
     ]
 
+    private var centralManager: CBCentralManager?
+    
+    // This method will be called to check Bluetooth status and ask for permission
+    private func checkBluetoothPermission() {
+        self.centralManager = CBCentralManager(delegate: self, queue: nil, options: [CBCentralManagerOptionShowPowerAlertKey: true])
+    }
+
+    // CBCentralManagerDelegate method to monitor Bluetooth state
+    public func centralManagerDidUpdateState(_ central: CBCentralManager) {
+        switch central.state {
+        case .poweredOn:
+            print("Bluetooth is On")
+            // Bluetooth is available
+        case .poweredOff:
+            print("Bluetooth is Off")
+            // Show alert to the user that Bluetooth is off
+        case .unauthorized:
+            print("Bluetooth access is unauthorized")
+            // Handle the case where Bluetooth access is not granted
+        case .unsupported:
+            print("Bluetooth is not supported on this device")
+        case .unknown, .resetting:
+            print("Bluetooth state is unknown or resetting")
+        @unknown default:
+            print("Unknown state")
+        }
+    }
+
     @objc func playVideo(_ call: CAPPluginCall) {
         let videoUrl = call.getString("video") ?? NO_URL_PROVIDED
+            
         
         if(videoUrl == NO_URL_PROVIDED) {
             call.reject(NO_URL_PROVIDED)
@@ -24,7 +54,10 @@ public class VideoPlugin: CAPPlugin, CAPBridgedPlugin {
                 call.reject("Invalid URL")
                 return
             }
-            let player = AVPlayer(url: uriUrl)
+            
+            checkBluetoothPermission()
+            
+            /**let player = AVPlayer(url: uriUrl)
             DispatchQueue.main.async {
                 let controller = AVPlayerViewController()
                 controller.player = player
@@ -32,7 +65,7 @@ public class VideoPlugin: CAPPlugin, CAPBridgedPlugin {
                     player.play()
                 }
                 call.resolve()
-            }
+            }**/
         }
     }
 }
